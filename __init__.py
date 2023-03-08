@@ -87,31 +87,42 @@ def get_file_hash(filepath, regexpressions, *args, chunksize=8192, **kwargs):
     if not resa.results:
         resa.results.append((co, filepath, -1, 0, 0, 0, None, None))
 
-
 def regex_filesearch(files, regexpressions, *args,  with_context=True,chunksize=8192, **kwargs):
     dfs = []
     if not isinstance(files, list):
         files = [files]
     for f in files:
-        get_file_hash(f, regexpressions, chunksize=chunksize, *args, **kwargs)
-        if not resa.results:
+        try:
+            try:
+                get_file_hash(f, regexpressions, chunksize=chunksize, *args, **kwargs)
+            except Exception as fe:
+                print(fe)
+                continue
+            if not resa.results:
+                continue
+            df = (
+                pd.DataFrame(resa.results.copy())
+                .drop_duplicates(subset=[1, 2, 3], keep="first")
+                .reset_index(drop=True)
+            )
+            try:
+                df.columns = (
+                    "aa_chunkno",
+                    "aa_file",
+                    "aa_bytesstart",
+                    "aa_bytesend",
+                    "aa_chunkstart",
+                    "aa_chunkend",
+                    "aa_regex", "aa_regexpattern",
+                )
+            except Exception as gd:
+                print(gd)
+                continue
+            resa.results.clear()
+            dfs.append(df.copy())
+        except Exception as fa:
+            print(fa)
             continue
-        df = (
-            pd.DataFrame(resa.results.copy())
-            .drop_duplicates(subset=[1, 2, 3], keep="first")
-            .reset_index(drop=True)
-        )
-        df.columns = (
-            "aa_chunkno",
-            "aa_file",
-            "aa_bytesstart",
-            "aa_bytesend",
-            "aa_chunkstart",
-            "aa_chunkend",
-            "aa_regex", "aa_regexpattern",
-        )
-        resa.results.clear()
-        dfs.append(df.copy())
     try:
         dft = pd.concat(dfs, ignore_index=True).copy()
     except Exception:
